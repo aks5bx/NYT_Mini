@@ -1,6 +1,9 @@
 import pandas as pd 
 import numpy as np 
 from scipy import stats
+import math
+import matplotlib.pyplot as plt
+import pylab
 
 ################################
 ### DataFrame initialization ###
@@ -42,7 +45,7 @@ if initializeRanks == 'Initialize Ranks':
 
     crosswordStats['Rank'] = crosswordStats['Rank'].astype('int')
     crosswordStats.to_csv('crosswordStats.csv')
-        
+
 
 ###############################
 ### Defining useful methods ###
@@ -155,8 +158,135 @@ def getScaledRankNoOutliers(userID):
     return ranks[index]
 
 
-print(getScaledRankNoOutliers(1))
+def getUserName(userID):
+    return users[users['UserID'] == userID]['Name'].values[0]
+
+
+def getScreenName(userID):
+    return users[users['UserID'] == userID]['ScreenName'].values[0]
+
+
+def getBuddy(userID): 
+    crosswordsCompleted = list(set(getUserDF(userID, None)['CrosswordID']))
+    otherUsers = list(set(crosswordStats['UserID']))
+
+    otherUsers.remove(userID)
+
+    distances = [0] * 50
+    sharedCrosswords = [0] * 50
+
+    for crosswordNum in crosswordsCompleted: 
+        myTime = getUserDF(userID, crosswordNum)['ScaledTime'].values[0]        
+        
+        for user in otherUsers: 
+            otherUser = getUserDF(user, crosswordNum)
+            otherUserTime = otherUser['ScaledTime'].values
+
+            if len(otherUserTime) < 1  or (math.isnan(otherUserTime)):
+                continue
+            else: 
+                timeDiff = abs(myTime - otherUserTime[0])
+                distances[int(user)] += timeDiff
+                sharedCrosswords[int(user)] += 1
+
+    for index, distance in enumerate(distances): 
+        if sharedCrosswords[index] == 0: 
+            distances[index] = 10000000
+        else: 
+            distances[index] = (distance / sharedCrosswords[index]) / sharedCrosswords[index]
+
+    m = min(i for i in distances if i > 0)
+
+    minInd = distances.index(m)
+
+    print('User: ', getUserName(userID), '-------   Buddy: ', getUserName(minInd))
+    print(m)
+
+    return minInd
+
+
+def getFoe(userID): 
+    crosswordsCompleted = list(set(getUserDF(userID, None)['CrosswordID']))
+    otherUsers = list(set(crosswordStats['UserID']))
+
+    otherUsers.remove(userID)
+
+    distances = [0] * 50
+    sharedCrosswords = [0] * 50
+
+    for crosswordNum in crosswordsCompleted: 
+        myTime = getUserDF(userID, crosswordNum)['ScaledTime'].values[0]        
+        
+        for user in otherUsers: 
+            otherUser = getUserDF(user, crosswordNum)
+            otherUserTime = otherUser['ScaledTime'].values
+
+            if len(otherUserTime) < 1  or (math.isnan(otherUserTime)):
+                continue
+            else: 
+                timeDiff = abs(myTime - otherUserTime[0])
+                distances[int(user)] += timeDiff
+                sharedCrosswords[int(user)] += 1
+
+    for index, distance in enumerate(distances): 
+        if sharedCrosswords[index] == 0: 
+            distances[index] = 10000000
+        else: 
+            distances[index] = (distance / sharedCrosswords[index]) * sharedCrosswords[index]
+
+    m = max(i for i in distances if i < 10000000)
+
+    minInd = distances.index(m)
+
+    print(userID, minInd)
+    print('User: ', getUserName(userID), '-------   Foe: ', getUserName(minInd))
+    print(m)
+
+    return minInd
 
 
 
+#for i in range(1, 27):
+#    getFoe(i)
+#    print('---------------------------------')
 
+
+
+##############
+### GRAPHS ###
+##############
+
+## Crosswords by Day of the Week
+totalCrosswordStats = pd.merge(crosswords, crosswordStats, left_on='ID', right_on='CrosswordID')
+totalCrosswordStats = totalCrosswordStats[['DayOfWeek','MedianTime']]
+totalCrosswordStats = totalCrosswordStats.groupby('DayOfWeek').mean()
+
+#plt.figure()
+#totalCrosswordStats.plot.bar()
+#plt.show()
+
+## Median Time vs # of Crosswords Done
+times = []
+numCrosswords = []
+for i in range(1, 27):
+    numCrossword = len(getUserDF(i, None))
+    avgTime = sum(getUserDF(i, None).dropna()['ScaledTime']) / numCrossword
+
+    times.append(avgTime)
+    numCrosswords.append(numCrossword)
+
+
+plt.scatter(numCrosswords, times)
+plt.title('Average Scaled Time vs Number of Crosswords')
+plt.xlabel('Number of Crosswords')
+plt.ylabel('Average Scaled Time (time / medianTime)')
+plt.show()
+
+
+## Completion Rate 
+maxCrosswords = max(crosswords['ID'])
+completionRates = []
+for i in range(1, 27):
+    completionRates.append(len(getUserDF(i, None)) / maxCrosswords)
+
+print(sum(completionRates) / len(completionRates))
