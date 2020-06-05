@@ -25,7 +25,13 @@ Foe Score - score used to quantify how far two user performances are on a day-to
 
 ## Findings 
 - Completing more crosswords has no significant impact on crossword performance 
+
+
+
 - Saturday is the hardest day of the week, but otherwise there is no significant difference in performance on a daily basis
+![alt text](https://github.com/aks5bx/NYT_Mini/blob/master/CrosswordPerformancebyDOW.png)
+
+
 
 ## Future Work 
 - Refine buddy score and foe score; the current method of adjusting for number of mutual crosswords often overestates the importance of mutual crosswords (although this is largely rectified as the data set increases in size) 
