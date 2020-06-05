@@ -22,3 +22,12 @@ Scaled Rank - rank of a user's average scaled time compared with all other user 
 Buddy Score - score used to quantify how close two user performances are on a day-to-day basis; uses basic concepts of euclidean distance and adjusts metric to account for number of mutual crosswords (more mutual crosswords --> stronger buddy score) 
 
 Foe Score - score used to quantify how far two user performances are on a day-to-day basis; uses same concepts as buddy score
+
+## Findings 
+- Completing more crosswords has no significant impact on crossword performance 
+- Saturday is the hardest day of the week, but otherwise there is no significant difference in performance on a daily basis
+
+## Future Work 
+- Refine buddy score and foe score; the current method of adjusting for number of mutual crosswords often overestates the importance of mutual crosswords (although this is largely rectified as the data set increases in size) 
+- Utilize collaborative filtering in order to predict performance of a singe user based on performances of other users 
+- Automate process (currently process is almost fully automated, but NYT CAPTCHA cannot be bypassed by webdriver) 
