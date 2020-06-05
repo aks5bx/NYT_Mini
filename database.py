@@ -1,3 +1,4 @@
+## Importing libraries to use
 import pandas as pd 
 import numpy as np 
 from scipy import stats
@@ -9,9 +10,11 @@ import pylab
 ### DataFrame initialization ###
 ################################
 
+## Setting these values to "password" strings - if they are set, data structures will be initialized
 needsInit = ''
 initializeRanks = ''
 
+## Initializing data structures (if password is set)
 if needsInit == 'Needs To Be Initialized':
     col_names =  ['ID', 'Date', 'DayOfWeek', 'NumEntries', 'MedianTime']
     crosswords  = pd.DataFrame(columns = col_names)
@@ -36,7 +39,7 @@ crosswordStats = pd.read_csv('crosswordStats.csv')
 ## Contains meta data on users 
 users = pd.read_csv('users.csv')
 
-## Initialized Ranks if needed
+## Initialize ranks if needed
 if initializeRanks == 'Initialize Ranks': 
     for i in range(1, 31): 
         df = crosswordStats[crosswordStats['CrosswordID'] == i]
@@ -51,19 +54,22 @@ if initializeRanks == 'Initialize Ranks':
 ### Defining useful methods ###
 ###############################
 
+## This subsets the crosswords stats dataframe to include data on a single user
 def getUserDF(userID, crosswordID):
     df = crosswordStats[crosswordStats['UserID'] == userID]
     if crosswordID != None: 
         df = df[df['CrosswordID'] == crosswordID]
     return df
 
+## Produces baseline performance statistics for a user
 def getUserCrosswordStats(userID, crosswordID):
     df = getUserDF(userID, crosswordID)
     print('Raw Time :', df['RawTime'].values, ' seconds')
     print('Scaled Time :', df['ScaledTime'].values, ' of the median')
     print('Rank :', df['Rank'].values, ' th/st/rd place')
 
-
+## Gets the average scaled time for a user
+## limitDays allows the user to get stats on their last __ days  
 def getUserAvgScaledTime(userID, limitDays): 
     df = getUserDF(userID, None)
     df = df.sort_values(by='CrosswordID', ascending=False)
@@ -73,7 +79,8 @@ def getUserAvgScaledTime(userID, limitDays):
 
     return round(df['ScaledTime'].mean(), 4)
 
-
+## Same as method above, but removes outliers
+## limitDays allows the user to get stats on their last __ days  
 def getUserAvgScaledTimeNoOutliers(userID, limitDays): 
     df = getUserDF(userID, None)
     df = df.sort_values(by='CrosswordID', ascending=False)
@@ -88,6 +95,9 @@ def getUserAvgScaledTimeNoOutliers(userID, limitDays):
 
     return round(df['ScaledTime'].mean(), 4)
 
+## Retrieves the green rate for a user 
+## Green rate is the % of crosswords a user complete at or better than the median performance
+## limitDays allows the user to get stats on their last __ days  
 def getUserGreenRate(userID, limitDays): 
     df = getUserDF(userID, None)
     df = df.sort_values(by='CrosswordID', ascending=False)
@@ -100,7 +110,7 @@ def getUserGreenRate(userID, limitDays):
 
     return round(greenRows / totalRows, 4)
     
-
+## Gets the user rank based on the green rate metric
 def getGreenRateRank(userID): 
     userIDs = list(set(list(crosswordStats['UserID'])))
     
@@ -119,7 +129,7 @@ def getGreenRateRank(userID):
 
     return ranks[index]
 
-
+## Gets the user rank based on the scaled times
 def getScaledRank(userID): 
     userIDs = list(set(list(crosswordStats['UserID'])))
     
@@ -138,7 +148,7 @@ def getScaledRank(userID):
 
     return ranks[index]
 
-
+## Same as method above, but removes outliers
 def getScaledRankNoOutliers(userID): 
     userIDs = list(set(list(crosswordStats['UserID'])))
     
@@ -157,15 +167,18 @@ def getScaledRankNoOutliers(userID):
 
     return ranks[index]
 
-
+## Turns a userID into their username
 def getUserName(userID):
     return users[users['UserID'] == userID]['Name'].values[0]
 
-
+## Turns a userID into their screen name
 def getScreenName(userID):
     return users[users['UserID'] == userID]['ScreenName'].values[0]
 
-
+## Generates a crossword "buddy" for a user 
+## A crossword budy is someone who performs most similarly to a user on a day to day basis 
+## Uses basic principles of euclidean distance and adjusts the scores to account number of shared crosswords 
+## (If someone has done many mutual crosswords with another user, they are more likely to be buddies)
 def getBuddy(userID): 
     crosswordsCompleted = list(set(getUserDF(userID, None)['CrosswordID']))
     otherUsers = list(set(crosswordStats['UserID']))
@@ -182,7 +195,7 @@ def getBuddy(userID):
             otherUser = getUserDF(user, crosswordNum)
             otherUserTime = otherUser['ScaledTime'].values
 
-            if len(otherUserTime) < 1  or (math.isnan(otherUserTime)):
+            if len(otherUserTime) < 1  or (np.isnan(otherUserTime).any()):
                 continue
             else: 
                 timeDiff = abs(myTime - otherUserTime[0])
@@ -200,11 +213,11 @@ def getBuddy(userID):
     minInd = distances.index(m)
 
     print('User: ', getUserName(userID), '-------   Buddy: ', getUserName(minInd))
-    print(m)
+  #  print(m)
 
     return minInd
 
-
+## Same idea as the buddy system, but instead is the user you are least similar to in day to day performance
 def getFoe(userID): 
     crosswordsCompleted = list(set(getUserDF(userID, None)['CrosswordID']))
     otherUsers = list(set(crosswordStats['UserID']))
@@ -221,7 +234,7 @@ def getFoe(userID):
             otherUser = getUserDF(user, crosswordNum)
             otherUserTime = otherUser['ScaledTime'].values
 
-            if len(otherUserTime) < 1  or (math.isnan(otherUserTime)):
+            if len(otherUserTime) < 1  or (np.isnan(otherUserTime).any()):
                 continue
             else: 
                 timeDiff = abs(myTime - otherUserTime[0])
@@ -238,17 +251,23 @@ def getFoe(userID):
 
     minInd = distances.index(m)
 
-    print(userID, minInd)
     print('User: ', getUserName(userID), '-------   Foe: ', getUserName(minInd))
-    print(m)
+  #  print(m)
 
     return minInd
 
 
+## Prints out buddies
+print('CROSSWORD BUDDIES')
+for i in range(1, 27):
+    getBuddy(i)
+    print('---------------------------------')
 
-#for i in range(1, 27):
-#    getFoe(i)
-#    print('---------------------------------')
+## Prints out foes
+print('CROSSWORD FOES')
+for i in range(1, 27):
+    getFoe(i)
+    print('---------------------------------')
 
 
 
@@ -261,9 +280,12 @@ totalCrosswordStats = pd.merge(crosswords, crosswordStats, left_on='ID', right_o
 totalCrosswordStats = totalCrosswordStats[['DayOfWeek','MedianTime']]
 totalCrosswordStats = totalCrosswordStats.groupby('DayOfWeek').mean()
 
-#plt.figure()
-#totalCrosswordStats.plot.bar()
-#plt.show()
+# plt.figure()
+totalCrosswordStats.plot.bar()
+plt.title('Crossword Performance by Day of Week')
+plt.xlabel('Day of the Week')
+plt.ylabel('Time (seconds)')
+plt.show()
 
 ## Median Time vs # of Crosswords Done
 times = []
@@ -282,11 +304,12 @@ plt.xlabel('Number of Crosswords')
 plt.ylabel('Average Scaled Time (time / medianTime)')
 plt.show()
 
-
 ## Completion Rate 
 maxCrosswords = max(crosswords['ID'])
 completionRates = []
 for i in range(1, 27):
     completionRates.append(len(getUserDF(i, None)) / maxCrosswords)
 
-print(sum(completionRates) / len(completionRates))
+## Reports the crossword completion rate across all users
+## Of all the possible crosswords users could have complete, what % did they complete
+print('Crossword Completion Rate ', round(sum(completionRates) / len(completionRates), 1) * 100, '%')
